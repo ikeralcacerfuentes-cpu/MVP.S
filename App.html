@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Gnossy">
+  <meta name="theme-color" content="#0f6b56">
+  <meta charset="UTF-8" />
+  <title>Gnossy · Registro diario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #f4f6fb; --card: #ffffff;
+      --accent: #2ac6a8; --accent-soft: #4f8cff;
+      --text-main: #111827; --text-muted: #6b7280; --border-soft: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Roboto",sans-serif; background:var(--bg); color:var(--text-main); }
+    .app-wrapper { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .app-card { width:100%; max-width:420px; background:var(--card); border-radius:24px; padding:20px 20px 24px; box-shadow:0 18px 40px rgba(15,23,42,0.08); position:relative; overflow:hidden; }
+    .background-pattern { position:absolute; inset:0; background-image:url('LOGO_GNOSSY-removebg-preview.png'); background-size:80px; background-repeat:repeat; opacity:0.05; z-index:0; pointer-events:none; }
+    .logo-ghost { position:absolute; inset:-40%; background:radial-gradient(circle at top left,rgba(79,140,255,0.06),transparent 60%); pointer-events:none; z-index:0; }
+    .logo-ghost::after { content:""; position:absolute; width:220px; height:220px; border-radius:50%; border:2px solid rgba(42,198,168,0.18); top:10%; right:-10%; }
+    .content { position:relative; z-index:1; }
+    .gnossy-logo-small { width:32px; height:32px; opacity:0.85; margin-bottom:10px; }
+    h1 { font-size:1.25rem; margin:0 0 4px; }
+    .subtitle { font-size:0.85rem; color:var(--text-muted); margin-bottom:16px; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; background:rgba(42,198,168,0.08); color:var(--accent); font-size:0.75rem; margin-bottom:10px; }
+    .pill-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+    .section-card { border-radius:18px; padding:12px 14px; background:#f9fafb; border:1px solid var(--border-soft); margin-bottom:12px; }
+    .section-title { font-size:0.8rem; font-weight:600; margin-bottom:6px; }
+
+    /* EVA SLIDER */
+    .eva-block { margin-bottom:18px; }
+    .eva-question { font-size:0.85rem; font-weight:600; color:var(--text-main); margin-bottom:6px; line-height:1.4; }
+    .eva-anchors { display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-bottom:4px; }
+    .eva-slider-row { display:flex; align-items:center; gap:10px; }
+    .eva-value {
+      min-width:28px; text-align:center; font-size:0.85rem; font-weight:700;
+      color:var(--accent); background:rgba(42,198,168,0.1);
+      border-radius:8px; padding:2px 6px;
+    }
+    input[type="range"] {
+      flex:1; -webkit-appearance:none; appearance:none;
+      height:5px; border-radius:999px;
+      background:linear-gradient(90deg,var(--accent-soft),var(--accent));
+      outline:none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px; border-radius:50%;
+      background:#ffffff; border:2px solid var(--accent);
+      box-shadow:0 0 0 4px rgba(42,198,168,0.2); cursor:pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width:18px; height:18px; border-radius:50%;
+      background:#ffffff; border:2px solid var(--accent);
+      box-shadow:0 0 0 4px rgba(42,198,168,0.2); cursor:pointer;
+    }
+    .primary-btn { width:100%; border:none; border-radius:999px; padding:10px 16px; font-size:0.9rem; font-weight:600; color:#ffffff; background:linear-gradient(135deg,var(--accent-soft),var(--accent)); cursor:pointer; margin-top:8px; }
+    .primary-btn:disabled { opacity:0.6; cursor:default; }
+    .insight-text { font-size:0.8rem; color:var(--text-main); }
+    .rec-table { width:100%; border-collapse:collapse; margin-top:4px; }
+    .rec-table tr { border-bottom:1px dashed var(--border-soft); }
+    .rec-table tr:last-child { border-bottom:none; }
+    .rec-table td { padding:6px 4px; font-size:0.78rem; vertical-align:top; }
+    .rec-cat { font-weight:600; color:var(--accent); white-space:nowrap; padding-right:8px; width:90px; }
+    .rec-empty { font-size:0.8rem; color:var(--text-muted); }
+    .footer-note { margin-top:10px; font-size:0.7rem; color:var(--text-muted); }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,0.45); display:flex; align-items:center; justify-content:center; z-index:50; }
+    .modal { width:100%; max-width:380px; background:#ffffff; border-radius:20px; padding:18px 18px 20px; box-shadow:0 18px 40px rgba(15,23,42,0.18); }
+    .modal h2 { margin:0 0 6px; font-size:1rem; }
+    .modal p { margin:0 0 10px; font-size:0.8rem; color:var(--text-muted); }
+    .input-label { font-size:0.8rem; margin-bottom:4px; display:block; }
+    .text-input { width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--border-soft); font-size:0.85rem; }
+    .id-hint { font-size:0.7rem; margin-top:6px; color:var(--text-muted); }
+    .link-small { color:var(--accent-soft); text-decoration:none; }
+    .modal-actions { margin-top:14px; display:flex; justify-content:flex-end; gap:8px; }
+    .btn-small { border-radius:999px; padding:7px 14px; border:none; cursor:pointer; font-size:0.8rem; }
+    .btn-fill { background:linear-gradient(135deg,var(--accent-soft),var(--accent)); color:#ffffff; font-weight:600; }
+    .error-msg { margin-top:6px; font-size:0.75rem; color:#b91c1c; }
+    .risk-box { border-radius:14px; padding:10px 12px; border:1px solid rgba(248,113,113,0.5); background:rgba(248,113,113,0.06); font-size:0.8rem; color:#7f1d1d; margin-top:8px; }
+    .onboarding-overlay { position:absolute; inset:0; background:linear-gradient(135deg,#4f8cff,#2ac6a8); color:#ffffff; padding:24px; display:none; flex-direction:column; justify-content:center; align-items:center; text-align:center; z-index:10; }
+    .progress-bar { width:90%; max-width:340px; height:4px; border-radius:999px; background:rgba(255,255,255,0.2); overflow:hidden; margin-bottom:40px; }
+    .progress-bar-inner { height:100%; width:0%; background:#ffffff; border-radius:999px; transition:width 0.25s ease-out; }
+    .onb-step-title { font-size:1.8rem; font-weight:700; margin-bottom:12px; }
+    .onb-step-text { font-size:1.05rem; max-width:320px; line-height:1.45; opacity:0.95; margin-bottom:40px; }
+    .onb-bottom { margin-top:40px; display:flex; justify-content:center; }
+    .onb-btn { border-radius:999px; border:none; padding:8px 14px; font-size:0.85rem; font-weight:600; color:#111827; background:#ffffff; cursor:pointer; }
+    @media (max-width:480px) { .app-card { border-radius:20px; padding:16px; } }
+  </style>
+</head>
+<body>
+
+<!-- DISCLAIMER LEGAL -->
+<div id="legalModal" class="modal-backdrop" style="display:flex;">
+  <div class="modal">
+    <h2>Aviso importante</h2>
+    <p style="margin-bottom:12px;font-size:0.82rem;color:#555;">Esta app tiene fines educativos y de autoconocimiento. No está diseñada para diagnosticar, tratar ni sustituir la valoración de ningún profesional sanitario.</p>
+    <p style="margin-bottom:12px;font-size:0.82rem;color:#555;">Las recomendaciones son orientativas. Si tus síntomas empeoran o tienes ideas de hacerte daño, contacta con un profesional o llama al 112.</p>
+    <p style="margin-bottom:14px;font-size:0.82rem;color:#555;">Al continuar, aceptas que utilizas esta app bajo tu propia responsabilidad.</p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn-small btn-fill" onclick="acceptLegal()">Aceptar y continuar</button>
+    </div>
+  </div>
+</div>
+<script>
+  function acceptLegal() {
+    document.getElementById('legalModal').style.display='none';
+    document.getElementById('idModal').style.display='flex';
+  }
+  document.addEventListener('DOMContentLoaded',()=>{ document.getElementById('idModal').style.display='none'; });
+</script>
+
+<div class="app-wrapper">
+  <div class="app-card">
+    <div class="background-pattern"></div>
+    <div class="logo-ghost"></div>
+
+    <div id="onboardingOverlay" class="onboarding-overlay">
+      <div class="progress-bar"><div id="progressInner" class="progress-bar-inner"></div></div>
+      <div id="onbTitle" class="onb-step-title"></div>
+      <div id="onbText" class="onb-step-text"></div>
+      <div class="onb-bottom"><button class="onb-btn" onclick="nextOnboardingStep()">Siguiente</button></div>
+    </div>
+
+    <div class="content">
+      <img src="LOGO_GNOSSY-removebg-preview.png" class="gnossy-logo-small" alt="logo" />
+      <div class="pill"><span class="pill-dot"></span>Gnossy · Registro diario</div>
+      <h1>¿Cómo estás hoy?</h1>
+      <div class="subtitle">Responde las cinco preguntas y guarda tu día en menos de un minuto.</div>
+
+      <div class="section-card">
+        <div class="section-title">Insight diario</div>
+        <div id="insightText" class="insight-text">Cuando guardes tu primer registro verás aquí cómo estás evolucionando.</div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Cómo estás hoy</div>
+
+        <!-- EVA 1: Tristeza -->
+        <div class="eva-block">
+          <div class="eva-question">¿Cuán triste te has sentido hoy?</div>
+          <div class="eva-anchors"><span>0 · Nada triste</span><span>10 · Extremadamente triste</span></div>
+          <div class="eva-slider-row">
+            <input type="range" min="0" max="10" value="0" id="slide-tristeza" />
+            <span id="val-tristeza" class="eva-value">0</span>
+          </div>
+        </div>
+
+        <!-- EVA 2: Estrés -->
+        <div class="eva-block">
+          <div class="eva-question">¿Cuán estresado/a te has sentido hoy?</div>
+          <div class="eva-anchors"><span>0 · Nada estresado/a</span><span>10 · Extremadamente estresado/a</span></div>
+          <div class="eva-slider-row">
+            <input type="range" min="0" max="10" value="0" id="slide-estres" />
+            <span id="val-estres" class="eva-value">0</span>
+          </div>
+        </div>
+
+        <!-- EVA 3: Fatiga -->
+        <div class="eva-block">
+          <div class="eva-question">¿Cuán fatigado/a te has sentido hoy?</div>
+          <div class="eva-anchors"><span>0 · Nada fatigado/a</span><span>10 · Extremadamente fatigado/a</span></div>
+          <div class="eva-slider-row">
+            <input type="range" min="0" max="10" value="0" id="slide-fatiga" />
+            <span id="val-fatiga" class="eva-value">0</span>
+          </div>
+        </div>
+
+        <!-- EVA 4: Sueño -->
+        <div class="eva-block">
+          <div class="eva-question">¿Cómo valorarías la calidad de tu sueño?</div>
+          <div class="eva-anchors"><span>0 · Muy mala</span><span>10 · Muy buena</span></div>
+          <div class="eva-slider-row">
+            <input type="range" min="0" max="10" value="5" id="slide-sueno" />
+            <span id="val-sueno" class="eva-value">5</span>
+          </div>
+        </div>
+
+        <!-- EVA 5: Digestión -->
+        <div class="eva-block">
+          <div class="eva-question">¿Cuán intensas han sido tus molestias digestivas hoy?</div>
+          <div class="eva-anchors"><span>0 · Ningún síntoma</span><span>10 · Muy intensos</span></div>
+          <div class="eva-slider-row">
+            <input type="range" min="0" max="10" value="0" id="slide-digestion" />
+            <span id="val-digestion" class="eva-value">0</span>
+          </div>
+        </div>
+
+        <button id="saveBtn" class="primary-btn" onclick="saveToday()" disabled>Registrar día</button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Recomendaciones de hoy</div>
+        <div id="recContainer"><p class="rec-empty">Guarda tu registro para ver tus recomendaciones personalizadas.</p></div>
+      </div>
+
+      <div class="footer-note">Gnossy tiene fines de autoconocimiento. No sustituye la valoración de ningún profesional sanitario.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ID -->
+<div id="idModal" class="modal-backdrop">
+  <div class="modal">
+    <h2>Accede con tu ID</h2>
+    <p>Introduce el mismo ID que usaste al completar los cuestionarios.</p>
+    <label class="input-label" for="idInput">Tu ID</label>
+    <input id="idInput" class="text-input" type="text" placeholder="Ej. IM2024A" />
+    <div class="id-hint">¿No has hecho los cuestionarios? <a class="link-small" href="Cuestionarios.html" target="_blank">Completar cuestionarios</a></div>
+    <div id="idError" class="error-msg" style="display:none;"></div>
+    <div class="modal-actions"><button class="btn-small btn-fill" onclick="confirmId()">Entrar</button></div>
+  </div>
+</div>
+
+<!-- BOTÓN INSTALAR -->
+<button id="installHelpBtn" style="position:absolute;top:16px;right:16px;padding:6px 14px;border-radius:999px;border:none;background:#0f6b56;color:#fff;font-size:13px;cursor:pointer;z-index:1000;">Instalar app</button>
+<div id="installHelpOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;"></div>
+<div id="installHelpModal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);max-width:420px;width:90%;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.25);padding:16px 18px 14px;font-size:14px;line-height:1.4;z-index:9999;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="font-weight:600;font-size:15px;">Cómo instalar Gnossy</div>
+    <button id="installHelpClose" style="border:none;background:transparent;font-size:18px;cursor:pointer;">×</button>
+  </div>
+  <div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:4px;">iPhone / iPad (Safari)</div><ol style="padding-left:18px;margin:0;"><li>Pulsa el botón de compartir.</li><li>Toca <strong>"Añadir a pantalla de inicio"</strong>.</li><li>Confirma y pulsa <strong>"Añadir"</strong>.</li></ol></div>
+  <div style="margin-top:6px;"><div style="font-weight:600;margin-bottom:4px;">Android (Chrome)</div><ol style="padding-left:18px;margin:0;"><li>Abre el menú (⋮).</li><li>Selecciona <strong>"Añadir a pantalla de inicio"</strong>.</li></ol></div>
+</div>
+<script>
+  (function(){
+    var btn=document.getElementById('installHelpBtn'), overlay=document.getElementById('installHelpOverlay'), modal=document.getElementById('installHelpModal'), close=document.getElementById('installHelpClose');
+    function open(){overlay.style.display='block';modal.style.display='block';}
+    function closeM(){overlay.style.display='none';modal.style.display='none';}
+    if(btn)btn.addEventListener('click',open); if(close)close.addEventListener('click',closeM); if(overlay)overlay.addEventListener('click',closeM);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM();});
+  })();
+</script>
+
+<!-- MODAL RECORDATORIO -->
+<div id="reminderModal" class="modal-backdrop" style="display:none;">
+  <div class="modal">
+    <h2>Recordatorio diario</h2>
+    <p>Elige a qué hora quieres recordar hacer tu registro cada día.</p>
+    <label class="input-label" for="reminderTime">Hora del recordatorio</label>
+    <input id="reminderTime" class="text-input" type="time" />
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-small" type="button" onclick="closeReminderModal()">Cancelar</button>
+      <button class="btn-small btn-fill" type="button" onclick="confirmReminder()">Crear recordatorio</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://oxcncbcrujnaomruedrj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94Y25jYmNydWpuYW9tcnVlZHJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MDY3OTEsImV4cCI6MjA5MDA4Mjc5MX0.1pD1Tw6rbVm6o4pJB1BAe8hNB-y91RlKNVPpFJSGcNI';
+
+  let currentId = null, userProfile = null;
+
+  const onboardingSteps = [
+    { title:'Bienvenido/a a Gnossy', text:'Hemos creado tu perfil a partir de tus cuestionarios. Cada registro diario afina tus recomendaciones.' },
+    { title:'Responde 5 preguntas al día', text:'Cinco escalas visuales analógicas (EVAs) que miden tristeza, estrés, fatiga, calidad del sueño y molestias digestivas. Menos de un minuto.' },
+    { title:'Recomendaciones naturales', text:'Hábitos, alimentos, suplementos, fitoterapia y técnicas emocionales adaptadas a tu perfil y a cómo estás hoy. Sin efectos secundarios ni dependencias.' }
+  ];
+  let onboardingStep = 0;
+
+  async function sbGet(table, filters) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}?`;
+    Object.entries(filters).forEach(([k,v])=>{ url+=`${k}=eq.${encodeURIComponent(v)}&`; });
+    url+='limit=1';
+    const res = await fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}});
+    const data = await res.json();
+    return data && data.length > 0 ? data[0] : null;
+  }
+
+  async function sbGetMany(table, filters, order) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}?`;
+    Object.entries(filters).forEach(([k,v])=>{ url+=`${k}=eq.${encodeURIComponent(v)}&`; });
+    if(order) url+=`order=${order}`;
+    const res = await fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}});
+    return await res.json();
+  }
+
+  async function sbInsert(table, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Prefer':'return=representation'},
+      body:JSON.stringify(data)
+    });
+    const result = await res.json();
+    if(!res.ok) throw new Error(JSON.stringify(result));
+    return Array.isArray(result)?result[0]:result;
+  }
+
+  async function sbUpdate(table, filters, data) {
+    let url=`${SUPABASE_URL}/rest/v1/${table}?`;
+    Object.entries(filters).forEach(([k,v])=>{ url+=`${k}=eq.${encodeURIComponent(v)}&`; });
+    await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`},body:JSON.stringify(data)});
+  }
+
+  // ─── MOTOR DE RECOMENDACIONES ────────────────────────
+  // tristeza, estres, fatiga: 0=nada, 10=máximo (alto = peor)
+  // sueno: 0=muy mala, 10=muy buena (alto = mejor)
+  // digestion: 0=sin síntomas, 10=muy intensos (alto = peor)
+
+  function recomendarHabito(p, d) {
+    const { cse_total, cpp_neuroticismo, cpp_conciencia } = p;
+    const { estres, fatiga, tristeza, sueno } = d;
+    if (estres >= 7 || cse_total >= 20) return { titulo:'🌿 Hábito: Paseo sin pantallas', texto:'Sal a caminar 20 minutos sin móvil, preferiblemente en un espacio verde. Reduce el cortisol y resetea el sistema nervioso.' };
+    if (fatiga >= 7 || sueno <= 3) return { titulo:'☀️ Hábito: Exposición matutina a la luz', texto:'Sal a la luz natural en los primeros 30 minutos del día. Regula el ritmo circadiano, mejora el ánimo y reduce la fatiga de forma natural.' };
+    if (tristeza >= 6 || cpp_neuroticismo >= 2) return { titulo:'📓 Hábito: Journaling de 5 minutos', texto:'Escribe tres cosas que salieron bien hoy antes de dormir. Reduce la rumiación y mejora la calidad del sueño en perfiles con alta sensibilidad emocional.' };
+    if (cpp_conciencia <= -1) return { titulo:'📋 Hábito: Una lista de 3 tareas', texto:'Cada mañana escribe solo tres tareas prioritarias del día. Ayuda a estructurar la energía sin sobrecargar el sistema.' };
+    return { titulo:'🚶 Hábito: Movimiento suave diario', texto:'Incorpora 15 minutos de movimiento ligero (estiramientos, yoga suave, caminar). La constancia es más importante que la intensidad.' };
+  }
+
+  function recomendarAlimento(p, d) {
+    const { cea_total, cea3, cea8, cea10 } = p;
+    const { estres, digestion, fatiga } = d;
+    if (digestion >= 6 || cea10 <= 1) return { titulo:'🥦 Alimento: Verduras cocidas y caldo', texto:'Prioriza verduras de fácil digestión (zanahoria, calabacín, apio) cocinadas al vapor o en caldo. Evita crudos y ultraprocesados para dar descanso al intestino.' };
+    if (estres >= 7 && cea8 <= 1) return { titulo:'💧 Alimento: Hidratación consciente', texto:'El estrés eleva el cortisol y deshidrata. Bebe al menos 2L de agua hoy, preferiblemente con una pizca de sal marina y limón para mejorar la absorción.' };
+    if (fatiga >= 6) return { titulo:'🥑 Alimento: Grasas saludables en el desayuno', texto:'Añade aguacate, frutos secos o aceite de oliva virgen extra al desayuno. Las grasas buenas estabilizan el azúcar en sangre y son combustible cerebral.' };
+    if (cea_total <= 5) return { titulo:'🐟 Alimento: Pescado azul esta semana', texto:'Incorpora sardinas, caballa o salmón al menos 2 veces esta semana. Los omega-3 reducen la inflamación y apoyan la función cerebral y el estado de ánimo.' };
+    return { titulo:'🫐 Alimento: Antioxidantes en tu próxima comida', texto:'Añade frutos rojos, cúrcuma o cacao puro a tu alimentación hoy. Protegen el sistema nervioso y tienen efecto antiinflamatorio.' };
+  }
+
+  function recomendarSuplemento(p, d) {
+    const { cse_total, cpp_neuroticismo, cea5, cea6 } = p;
+    const { estres, fatiga, tristeza, digestion } = d;
+    if ((estres >= 7 || tristeza >= 6) && cse_total >= 15) return { titulo:'💊 Suplemento: Magnesio bisglicinato', texto:'El magnesio es el mineral del sistema nervioso. La forma bisglicinato es la más absorbible. Tómalo por la noche: calma el sistema nervioso y mejora el sueño.' };
+    if (tristeza >= 5 || fatiga >= 6) return { titulo:'🌱 Suplemento: Vitamina D3 + K2', texto:'La deficiencia de vitamina D se relaciona con ánimo bajo y fatiga. Si no te da mucho el sol, considera suplementar. La K2 ayuda a fijarla correctamente.' };
+    if (cea5 <= 1 && cpp_neuroticismo >= 1) return { titulo:'🐟 Suplemento: Omega-3 (EPA/DHA)', texto:'Si el pescado azul escasea en tu dieta, un suplemento de omega-3 de calidad (mínimo 1g EPA+DHA diario) apoya el estado de ánimo y reduce la reactividad emocional.' };
+    if (digestion >= 5 || cea6 <= 1) return { titulo:'🦠 Suplemento: Probiótico multiestirpe', texto:'Tu eje intestino-cerebro necesita apoyo. Un probiótico con Lactobacillus y Bifidobacterium mejora la digestión, el estado de ánimo y la respuesta al estrés.' };
+    return { titulo:'🌿 Suplemento: Ashwagandha', texto:'La ashwagandha ayuda al cuerpo a adaptarse al estrés crónico sin generar dependencia. Tómala por la mañana o al mediodía. Consulta con un profesional si tomas medicación.' };
+  }
+
+  function recomendarFitoterapia(p, d) {
+    const { cse_total, cpp_neuroticismo, cea10 } = p;
+    const { estres, tristeza, digestion, fatiga, sueno } = d;
+    if (sueno <= 4 || (estres >= 6 && cse_total >= 18)) return { titulo:'🍵 Fitoterapia: Valeriana o Pasiflora', texto:'Para noches con mente activa o nerviosismo alto, una infusión de valeriana o pasiflora 30 minutos antes de dormir tiene efecto calmante sin generar dependencia.' };
+    if (tristeza >= 5 || (fatiga >= 6 && estres >= 5)) return { titulo:'🌸 Fitoterapia: Rhodiola rosea', texto:'La rhodiola es un adaptógeno para el agotamiento mental y el ánimo bajo. Tómala por la mañana. Evitar en fase maníaca o con antidepresivos ISRS.' };
+    if (digestion >= 5 || cea10 <= 1) return { titulo:'🌿 Fitoterapia: Manzanilla o Melisa', texto:'Una infusión de manzanilla o melisa tras las comidas mejora la digestión, reduce los espasmos intestinales y calma el sistema nervioso entérico.' };
+    if (estres >= 5 && cpp_neuroticismo >= 1) return { titulo:'🍃 Fitoterapia: Melisa (Lemon Balm)', texto:'La melisa tiene efecto ansiolítico suave respaldado por investigación. En infusión o extracto estandarizado reduce la reactividad emocional.' };
+    return { titulo:'🫖 Fitoterapia: Matcha', texto:'El matcha combina L-teanina y cafeína natural: activa sin generar ansiedad y mejora el foco. Ideal como sustituto del café si tiendes a activarte demasiado.' };
+  }
+
+  function recomendarTecnica(p, d) {
+    const { cpp_neuroticismo, mae_perfil, cse_total } = p;
+    const { estres, tristeza, fatiga, sueno } = d;
+    if (estres >= 8 || (estres >= 6 && cse_total >= 20)) return { titulo:'🫁 Técnica: Respiración 4-7-8', texto:'Inhala 4 seg, retén 7, exhala 8. Repite 4 veces. Activa el nervio vago y baja el sistema de alarma en menos de 2 minutos.' };
+    if (tristeza >= 6 || (fatiga >= 7 && sueno <= 4)) return { titulo:'🧘 Técnica: Body scan de 5 minutos', texto:'Túmbate, cierra los ojos y lleva la atención lentamente desde los pies hasta la cabeza. Reconecta cuerpo y mente y reduce el estado de alerta crónica.' };
+    if (mae_perfil === 'calma' || mae_perfil === 'intelecto') return { titulo:'✍️ Técnica: Escritura expresiva', texto:'Escribe durante 10 minutos sin parar sobre cómo te sientes, sin editar ni juzgar. Reduce el cortisol y ayuda a procesar emociones difíciles.' };
+    if (mae_perfil === 'naturaleza' || mae_perfil === 'exploracion') return { titulo:'🌳 Técnica: Baño de bosque', texto:'Sal a un espacio natural sin música ni móvil y activa los 5 sentidos. 20 minutos de naturaleza reducen el cortisol y mejoran el estado de ánimo.' };
+    if (mae_perfil === 'social') return { titulo:'🤝 Técnica: Conexión social intencional', texto:'Llama o queda con alguien de confianza. La conexión social genuina activa la oxitocina, que contrarresta el cortisol.' };
+    if (mae_perfil === 'arte') return { titulo:'🎨 Técnica: Expresión creativa libre', texto:'Dedica 15 minutos a algo creativo sin objetivo. No se trata del resultado, sino del proceso de descarga emocional.' };
+    return { titulo:'🫁 Técnica: Coherencia cardiaca', texto:'Respira 5 seg para inhalar y 5 para exhalar durante 5 minutos. Sincroniza corazón y cerebro y mejora la variabilidad de la frecuencia cardiaca.' };
+  }
+
+  function generarRecomendaciones(perfil, d) {
+    return {
+      habito: recomendarHabito(perfil, d),
+      alimento: recomendarAlimento(perfil, d),
+      suplemento: recomendarSuplemento(perfil, d),
+      fitoterapia: recomendarFitoterapia(perfil, d),
+      tecnica: recomendarTecnica(perfil, d)
+    };
+  }
+
+  function generarInsight(registros, diaActual) {
+    if (!registros || registros.length === 0) return 'Este es tu primer registro. ¡Buen comienzo!';
+    const ultimo = registros[0];
+    const diffTristeza = diaActual.tristeza - ultimo.tristeza;
+    const diffEstres = diaActual.estres - ultimo.estres;
+    const diffFatiga = diaActual.fatiga - ultimo.fatiga;
+    const diffSueno = diaActual.sueno - ultimo.sueno;
+    let partes = [];
+    if (diffTristeza > 2) partes.push('el estado de ánimo ha bajado respecto al último registro');
+    else if (diffTristeza < -2) partes.push('el estado de ánimo ha mejorado notablemente');
+    if (diffEstres > 2) partes.push('el estrés ha aumentado');
+    else if (diffEstres < -2) partes.push('el estrés ha bajado, algo está funcionando');
+    if (diffFatiga > 2) partes.push('la fatiga ha subido');
+    else if (diffFatiga < -2) partes.push('te notas con más energía que el último día');
+    if (diffSueno > 2) partes.push('has dormido mejor');
+    else if (diffSueno < -2) partes.push('la calidad del sueño ha empeorado');
+    if (partes.length === 0) return 'Tus valores se mantienen estables respecto al último registro.';
+    return partes.map((p,i) => i===0 ? p.charAt(0).toUpperCase()+p.slice(1) : p).join(', ') + '.';
+  }
+
+  function renderRecomendaciones(recs) {
+    const container = document.getElementById('recContainer');
+    const cats = [
+      {key:'habito',label:'🌿 Hábito'},
+      {key:'alimento',label:'🥗 Alimento'},
+      {key:'suplemento',label:'💊 Suplemento'},
+      {key:'fitoterapia',label:'🍵 Fito'},
+      {key:'tecnica',label:'🧘 Técnica'}
+    ];
+    let html='<table class="rec-table">';
+    cats.forEach(({key,label})=>{
+      const r=recs[key];
+      const tituloLimpio = r.titulo.replace(/^[\S]+\s/, '');
+      html+=`<tr><td class="rec-cat">${label}</td><td><strong>${tituloLimpio}</strong><br><span style="color:var(--text-muted)">${r.texto}</span></td></tr>`;
+    });
+    html+='</table>';
+    container.innerHTML=html;
+  }
+
+  async function confirmId() {
+    const id=document.getElementById('idInput').value.trim();
+    if(!id){showIdError('Introduce un ID válido.');return;}
+    await tryLogin(id);
+  }
+
+  async function tryLogin(id) {
+    try {
+      const perfil = await sbGet('perfiles',{uid:id});
+      if(!perfil){showIdError('No encontramos este ID. Asegúrate de que es el mismo que usaste en los cuestionarios.');return;}
+      if(perfil.riesgo){
+        document.getElementById('idError').style.display='block';
+        document.getElementById('idError').innerHTML='<div class="risk-box">Por cómo han salido tus cuestionarios, esta app no está pensada para ti en este momento. Si estás pasándolo mal, habla con alguien de confianza, acude a tu centro de salud o llama al 024 / 112.</div>';
+        return;
+      }
+      currentId=id; userProfile=perfil;
+      localStorage.setItem('gnossy_id',id);
+      document.getElementById('idModal').style.display='none';
+      document.getElementById('saveBtn').disabled=false;
+      if(!perfil.onboarding_done){onboardingStep=0;updateOnboardingStep();document.getElementById('onboardingOverlay').style.display='flex';}
+      await cargarUltimoInsight();
+    } catch(err){console.error(err);showIdError('Ha habido un problema. Inténtalo de nuevo en unos minutos.');}
+  }
+
+  async function cargarUltimoInsight() {
+    try {
+      const registros = await sbGetMany('registros',{uid:currentId},'fecha.desc');
+      if(registros && registros.length>0){
+        const u=registros[0];
+        document.getElementById('insightText').textContent=`Último registro — Tristeza: ${u.tristeza}/10 · Estrés: ${u.estres}/10 · Fatiga: ${u.fatiga}/10 · Sueño: ${u.sueno}/10 · Digestión: ${u.digestion}/10. Haz tu registro de hoy para ver la evolución.`;
+      }
+    } catch(e){}
+  }
+
+  function showIdError(msg){const el=document.getElementById('idError');el.textContent=msg;el.style.display='block';}
+
+  function nextOnboardingStep(){
+    onboardingStep++;
+    if(onboardingStep>=onboardingSteps.length){
+      document.getElementById('onboardingOverlay').style.display='none';
+      if(currentId) sbUpdate('perfiles',{uid:currentId},{onboarding_done:true}).catch(()=>{});
+    } else updateOnboardingStep();
+  }
+
+  function updateOnboardingStep(){
+    const step=onboardingSteps[onboardingStep];
+    document.getElementById('onbTitle').textContent=step.title;
+    document.getElementById('onbText').textContent=step.text;
+    document.getElementById('progressInner').style.width=((onboardingStep+1)/onboardingSteps.length*100)+'%';
+  }
+
+  async function saveToday(){
+    if(!currentId||!userProfile) return;
+    const d={
+      tristeza: parseInt(document.getElementById('slide-tristeza').value),
+      estres:   parseInt(document.getElementById('slide-estres').value),
+      fatiga:   parseInt(document.getElementById('slide-fatiga').value),
+      sueno:    parseInt(document.getElementById('slide-sueno').value),
+      digestion:parseInt(document.getElementById('slide-digestion').value)
+    };
+    const btn=document.getElementById('saveBtn');
+    btn.disabled=true; btn.textContent='Guardando...';
+    try {
+      const registros = await sbGetMany('registros',{uid:currentId},'fecha.desc');
+      const insight = generarInsight(registros, d);
+      const recs = generarRecomendaciones(userProfile, d);
+      await sbInsert('registros',{
+        uid:currentId,
+        fecha:new Date().toISOString().split('T')[0],
+        tristeza:d.tristeza, estres:d.estres, fatiga:d.fatiga,
+        sueno:d.sueno, digestion:d.digestion,
+        insight,
+        rec_habito:recs.habito.titulo,
+        rec_alimento:recs.alimento.titulo,
+        rec_suplemento:recs.suplemento.titulo,
+        rec_fitoterapia:recs.fitoterapia.titulo,
+        rec_tecnica:recs.tecnica.titulo
+      });
+      document.getElementById('insightText').textContent=insight;
+      renderRecomendaciones(recs);
+      btn.disabled=false; btn.textContent='✓ Día registrado';
+      setTimeout(()=>{btn.textContent='Registrar día';},3000);
+    } catch(err){
+      console.error(err); btn.disabled=false; btn.textContent='Registrar día';
+      alert('Ha habido un error al guardar. Inténtalo de nuevo.');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const evas=[
+      {id:'tristeza',inicial:0},{id:'estres',inicial:0},
+      {id:'fatiga',inicial:0},{id:'sueno',inicial:5},{id:'digestion',inicial:0}
+    ];
+    evas.forEach(({id})=>{
+      const slider=document.getElementById('slide-'+id);
+      const label=document.getElementById('val-'+id);
+      slider.addEventListener('input',()=>{label.textContent=slider.value;});
+    });
+    const storedId=localStorage.getItem('gnossy_id');
+    if(storedId) document.getElementById('idInput').value=storedId;
+  });
+</script>
+
+<!-- RECORDATORIO ICS -->
+<script>
+  (function(){
+    function pad(n){return String(n).padStart(2,'0');}
+    function createIcs(t){
+      const now=new Date();
+      const ds=now.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      const y=now.getFullYear(),m=pad(now.getMonth()+1),d=pad(now.getDate());
+      let h=pad(now.getHours()),mi=pad(now.getMinutes());
+      if(t&&t.includes(':')){const p=t.split(':');h=pad(parseInt(p[0]));mi=pad(parseInt(p[1]));}
+      const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Gnossy//App//ES','BEGIN:VEVENT',`UID:${ds}-gnossy@app`,`DTSTAMP:${ds}`,'SUMMARY:Registro Gnossy diario',`DTSTART:${y}${m}${d}T${h}${mi}00`,'RRULE:FREQ=DAILY','DESCRIPTION:Recordatorio para hacer tu registro diario en Gnossy.','END:VEVENT','END:VCALENDAR'].join('\r\n');
+      const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='recordatorio-gnossy.ics';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+      alert('Archivo descargado. Ábrelo para añadir el recordatorio a tu calendario.');
+    }
+    window.openReminderModal=function(){
+      const now=new Date();
+      document.getElementById('reminderTime').value=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById('reminderModal').style.display='flex';
+    };
+    window.closeReminderModal=function(){document.getElementById('reminderModal').style.display='none';};
+    window.confirmReminder=function(){
+      const t=document.getElementById('reminderTime').value;
+      if(!t){alert('Elige una hora.');return;}
+      createIcs(t);closeReminderModal();
+    };
+    document.addEventListener('DOMContentLoaded',function(){
+      const content=document.querySelector('.content');
+      if(!content)return;
+      const btn=document.createElement('button');
+      btn.textContent='🔔 Crear recordatorio diario';
+      btn.style.cssText='margin-top:12px;width:100%;border-radius:999px;border:none;background:linear-gradient(135deg,var(--accent-soft),var(--accent));color:#fff;font-weight:600;font-size:0.8rem;padding:8px 10px;cursor:pointer;';
+      btn.addEventListener('click',openReminderModal);
+      content.appendChild(btn);
+    });
+  })();
+</script>
+
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./service-worker.js').catch(err=>console.log('SW failed:',err));
+    });
+  }
+</script>
+</body>
+</html>
